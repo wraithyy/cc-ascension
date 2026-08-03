@@ -37,18 +37,21 @@ Run: `chezmoi source-path ~/.claude`
 cd ~/.claude && git init
 ```
 
-with this `.gitignore` (tested against a real install — keeps config, excludes
-churn and private data):
+with this `.gitignore` (allowlist — a real `~/.claude` accumulates dozens of
+churn dirs like `backups/`, `cache/`, `file-history/`, `session-env/`,
+`debug/`, so ignore everything and track config explicitly):
 
 ```gitignore
-projects/
-todos/
-statsig/
-shell-snapshots/
-plugins/
-history.jsonl
-*.log
-.DS_Store
+/*
+!/.gitignore
+!/CLAUDE.md
+!/settings.json
+!/rules/
+!/commands/
+!/agents/
+!/skills/
+!/hooks/
+!/evolution/
 evolution/reports/
 evolution/friction.jsonl
 ```
