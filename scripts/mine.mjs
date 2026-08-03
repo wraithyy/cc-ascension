@@ -31,6 +31,8 @@ const tier = (m) => Object.keys(PRICES).find((t) => m.includes(t)) ?? 'sonnet';
 const projects = {};   // project -> {sessions, msgs}
 const models = {};     // model -> {count, in, out, cr, cw}
 const tools = {};      // tool -> count
+const agents = {};     // subagent_type -> Agent-call count (from main transcripts)
+const subModels = {};  // model -> msg count inside subagent transcripts
 const prompts = {};    // normalized prefix -> count
 const sessions = {};   // file -> {msgs, project}
 let files = 0;
@@ -61,8 +63,15 @@ for (const file of walk(root)) {
       const u = m.usage ?? {};
       mt.in += u.input_tokens ?? 0; mt.out += u.output_tokens ?? 0;
       mt.cr += u.cache_read_input_tokens ?? 0; mt.cw += u.cache_creation_input_tokens ?? 0;
+      if (file.includes('/subagents/')) subModels[m.model ?? '?'] = (subModels[m.model ?? '?'] ?? 0) + 1;
       for (const b of Array.isArray(m.content) ? m.content : [])
-        if (b.type === 'tool_use') tools[b.name] = (tools[b.name] ?? 0) + 1;
+        if (b.type === 'tool_use') {
+          tools[b.name] = (tools[b.name] ?? 0) + 1;
+          if ((b.name === 'Agent' || b.name === 'Task') && !file.includes('/subagents/')) {
+            const t = b.input?.subagent_type ?? 'general-purpose';
+            agents[t] = (agents[t] ?? 0) + 1;
+          }
+        }
     } else if (o.type === 'user' && m && !o.isMeta) {
       const c = m.content;
       const text = typeof c === 'string' ? c
@@ -194,6 +203,16 @@ ${top(Object.fromEntries(Object.entries(projects).map(([k, v]) => [k, v.sessions
 | Tool | Calls |
 |---|---|
 ${top(tools, 25).map(([t, c]) => `| ${t} | ${fmt(c)} |`).join('\n')}
+
+## Subagent usage (Agent calls by type, top 20)
+| Agent type | Calls |
+|---|---|
+${top(agents, 20).map(([a, c]) => `| ${a} | ${fmt(c)} |`).join('\n')}
+
+## Subagent messages by model
+| Model | Msgs |
+|---|---|
+${top(subModels, 10).map(([m, c]) => `| ${m} | ${fmt(c)} |`).join('\n')}
 
 ## Repeated prompts (top 20, normalized 60-char prefix, count >= 3)
 | Count | Prompt prefix |
