@@ -4,7 +4,7 @@
 //   --days N    only sessions modified in the last N days (default: all)
 //   --src DIR   transcript root (default: ~/.claude/projects; point at a backup mirror for >30d history)
 //   --state DIR state dir for reports (default: $CC_ASCENSION_STATE or ~/.claude/evolution)
-import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { execSync } from 'node:child_process';
@@ -95,6 +95,28 @@ const healthChecks = [
     }
     for (const [name, n] of Object.entries(seen))
       if (n > 1) lines.push(`FAIL \`${name}\`: listed ${n} times (duplicate registration)`);
+    return lines;
+  }],
+  ['Marketplace sources exist', () => {
+    const mp = JSON.parse(readFileSync(join(HOME, '.claude', 'plugins', 'known_marketplaces.json'), 'utf8'));
+    const lines = [];
+    for (const [name, entry] of Object.entries(mp)) {
+      const src = entry.source ?? {};
+      if (src.source === 'directory' && !existsSync(src.path))
+        lines.push(`FAIL \`${name}\`: directory source \`${src.path}\` does not exist (fails to load every session)`);
+    }
+    return lines;
+  }],
+  ['Secrets in MCP server config', () => {
+    // scan only the mcpServers block; never print the matched value
+    const lines = [];
+    for (const file of [join(HOME, '.claude.json'), join(HOME, '.mcp.json')]) {
+      if (!existsSync(file)) continue;
+      const servers = JSON.parse(readFileSync(file, 'utf8')).mcpServers ?? {};
+      for (const [name, cfg] of Object.entries(servers))
+        if (/glpat-[\w-]{10,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|xox[bp]-[\w-]{20,}/.test(JSON.stringify(cfg)))
+          lines.push(`FAIL \`${name}\` in ${file.split('/').pop()}: secret-looking string in server config — move it behind an env fetch (e.g. op read wrapper)`);
+    }
     return lines;
   }],
   ['Plugin provenance vs chezmoi source', () => {

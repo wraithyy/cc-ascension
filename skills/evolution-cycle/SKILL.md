@@ -39,8 +39,15 @@ anything. `$STATE` = `$CC_ASCENSION_STATE` or `~/.claude/evolution`.
 Compare the report's "Models seen" line against `$STATE/models.json` (the
 last-acknowledged model set, written at setup and after each migration).
 
-New model family or version detected (e.g. opus-4.x → opus-5, a new tier):
-this cycle becomes a **migration cycle** — no other improvement in the same run.
+This is a judgment call, NOT a set difference: trigger only on a model
+**newer** than the acknowledged set (new family or higher version, e.g.
+opus-4.x acknowledged → opus-5 seen, or a new tier appearing). Ignore
+*older* models in the window (legacy residue like opus-4-8 sessions when
+opus-5 is already acknowledged) and `<synthetic>` entries — a naive set-diff
+false-triggers on those.
+
+New model detected: this cycle becomes a **migration cycle** — no other
+improvement in the same run.
 
 1. Research the change per research-protocol: Anthropic migration guide and
    release notes FIRST (platform.claude.com / code.claude.com docs), then
