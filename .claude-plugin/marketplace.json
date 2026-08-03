@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "cc-ascension",
+  "description": "Marketplace for the cc-ascension plugin.",
+  "owner": {
+    "name": "wraithyy",
+    "url": "https://github.com/wraithyy"
+  },
+  "plugins": [
+    {
+      "name": "cc-ascension",
+      "description": "Evidence-driven Claude Code config evolution: onboarding interview, model-aware CLAUDE.md generation, continuous improvement from session data.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
