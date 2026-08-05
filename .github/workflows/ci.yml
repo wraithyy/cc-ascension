@@ -16,6 +16,8 @@ jobs:
           node --check scripts/mine.mjs
           node --check scripts/friction.mjs
           bash -n scripts/install-backup.sh
+      - name: Test miner
+        run: node --test scripts/mine.test.mjs
       - name: Validate manifests are JSON
         run: |
           node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json'))"

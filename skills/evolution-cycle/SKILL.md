@@ -30,7 +30,12 @@ anything. `$STATE` = `$CC_ASCENSION_STATE` or `~/.claude/evolution`.
 - Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/mine.mjs" --days 30`
   (add `--src <backup dir>` if the user has the optional backup mirror).
 - Read the fresh report in `$STATE/reports/` and `$STATE/friction.jsonl`.
-- Compare with the previous report if one exists: what changed since last cycle?
+- The report's "Delta since last report" section already diffs against the
+  previous run's sidecar (new models, tool shifts, health findings) — start
+  there instead of diffing reports by hand.
+- The "Friction candidates (mined)" section lists tool errors, denials,
+  interrupts, and retry loops detected from transcripts. Treat these as weaker
+  signal than explicit `/friction` entries when ranking.
 - Note the "Oldest transcript" line — if history is shallow, say so; on the
   FIRST cycle only, offer `scripts/install-backup.sh` for >30-day history.
 

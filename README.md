@@ -158,6 +158,16 @@ improvements); you approve, it applies exactly one change, then stops.
 days. Run `scripts/install-backup.sh` for a long-term local mirror, then mine
 with `--src`.
 
+**What does the report contain?** Besides usage/cost tables: a "Delta since
+last report" section (diffed against the previous run's JSON sidecar), a
+"Friction candidates" section mined from transcripts (tool errors, permission
+denials, interrupts, retry loops — weaker signal than explicit `/friction`
+entries), and config health checks. Scripted/headless sessions (SDK
+entrypoint, prompt bursts) are excluded from prompt stats; add
+`--exclude-project <name>` for manual exclusions, `--no-health` to skip the
+host config checks. Unknown model names are flagged instead of silently
+priced. Run `node --test scripts/mine.test.mjs` to test the miner.
+
 **Is any of my data sent anywhere?** No. Research fetches public docs; your
 transcripts, reports, and friction log stay on disk, gitignored.
 
