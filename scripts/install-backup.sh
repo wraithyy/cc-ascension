@@ -9,6 +9,7 @@ SRC="$HOME/.claude/projects"
 LABEL="cc-ascension-backup"
 
 mkdir -p "$DEST"
+chmod 700 "$DEST"  # transcripts can contain pasted secrets — owner-only
 BACKUP_CMD="rsync -a $SRC/ $DEST/projects/"
 
 if [[ "$(uname)" == "Darwin" ]]; then

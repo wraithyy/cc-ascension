@@ -214,9 +214,39 @@ const healthChecks = [
   }],
   ['chezmoi drift (~/.claude)', () => {
     if (!chezmoiSrc) throw new Error('chezmoi not detected');
-    const out = execSync(`chezmoi diff --include=files ${join(HOME, '.claude')} 2>&1`, { encoding: 'utf8', timeout: 60000 });
-    const n = out.split('\n').filter((l) => l.startsWith('+++ ')).length;
-    return n ? [`WARN ${n} file(s) drifted from chezmoi source — run \`chezmoi diff ~/.claude\``] : [];
+    // `-r` is mandatory: with a directory target, chezmoi does not recurse, so the
+    // pre-2026-08-05 form (`chezmoi diff --include=files ~/.claude`) matched nothing and
+    // this check reported OK unconditionally (verified chezmoi v2.65.0).
+    const destDir = execSync('chezmoi execute-template "{{ .chezmoi.destDir }}"', { encoding: 'utf8', timeout: 15000 }).trim();
+    const out = execSync(`chezmoi status --include=files -r ${join(HOME, '.claude')} 2>&1`, { encoding: 'utf8', timeout: 60000 });
+    const rels = out.split('\n').map((l) => l.slice(2).trim()).filter(Boolean);
+    // Claude Code rewrites settings.json (key order included) on /model, /theme, /config.
+    // Compare JSON semantically so cosmetic reordering does not train the reader to ignore
+    // this row — a noisy sensor is as useless as the silent one it replaced.
+    const flat = (v, p = '', acc = {}) => {
+      if (v && typeof v === 'object' && !Array.isArray(v))
+        for (const [k, x] of Object.entries(v)) flat(x, p ? `${p}.${k}` : k, acc);
+      else acc[p] = JSON.stringify(v);
+      return acc;
+    };
+    const lines = [];
+    for (const rel of rels) {
+      const abs = join(destDir, rel);
+      let source, live;
+      try {
+        source = JSON.parse(execSync(`chezmoi cat ${abs}`, { encoding: 'utf8', timeout: 30000 }));
+        live = JSON.parse(readFileSync(abs, 'utf8'));
+      } catch {
+        lines.push(`WARN \`${rel}\` differs from chezmoi source — run \`chezmoi diff ${abs}\``);
+        continue;
+      }
+      const a = flat(source), b = flat(live);
+      // key paths only, never values: settings.json carries env/hook command strings
+      const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k] !== b[k]);
+      if (keys.length)
+        lines.push(`WARN \`${rel}\`: ${keys.length} key(s) drifted from chezmoi source (${keys.slice(0, 6).join(', ')}${keys.length > 6 ? ', …' : ''}) — live edits are lost on next \`chezmoi apply\``);
+    }
+    return lines;
   }],
 ];
 const healthFindings = []; // WARN/FAIL lines only, for the sidecar + delta

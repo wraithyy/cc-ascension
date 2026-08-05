@@ -18,22 +18,39 @@ transcripts and logged pain points, researching fixes (official docs first),
 and proposing one small, reversible improvement at a time. Every change cites
 its sources or is flagged unverified — nothing is presented as fact without one.
 
+## Contents
+
+- [Install](#install)
+- [What using it looks like](#what-using-it-looks-like)
+- [How it works](#how-it-works)
+- [Commands](#commands)
+- [Is this for you?](#is-this-for-you)
+- [Safety & privacy](#safety--privacy)
+- [Requirements](#requirements)
+- [Details → docs/REFERENCE.md](docs/REFERENCE.md) — what it touches, state
+  layout, report reference, undo, troubleshooting, teams, FAQ
+
 ## Install
+
+Needs Node ≥ 18 and Claude Code with plugin support.
 
 ```
 /plugin marketplace add wraithyy/cc-ascension
 /plugin install cc-ascension@cc-ascension
 ```
 
-Run `/plugin` to confirm it loaded (or `/reload-plugins`). Then run
-`/cc-ascension:setup` — **that is always the first command.**
+Run `/plugin` to confirm it loaded (or restart the session — commands load at
+session start). Then run `/cc-ascension:setup` — **that is always the first
+command.** Nothing is ever written without showing you the diff first; see
+[Safety & privacy](#safety--privacy).
 
 ## What using it looks like
 
 1. You run `/cc-ascension:setup`. It asks a handful of questions in your
    language (stack, team, which model you run daily, top annoyances, how
-   autonomous Claude should be). It shows you the CLAUDE.md and settings diff
-   it wants to write — nothing is written until you approve.
+   autonomous Claude should be). If you already have a CLAUDE.md it asks
+   merge-or-fresh. It shows you the CLAUDE.md and settings diff it wants to
+   write — nothing is written until you approve.
 2. You work normally. When Claude does something annoying, you type
    `/cc-ascension:friction "kept re-explaining our API auth pattern"`.
    One line gets logged, you go back to work.
@@ -95,48 +112,18 @@ flowchart TD
 
 Two or more: run `/cc-ascension:setup`.
 
-## What it touches
+## Safety & privacy
 
-- **Reads**: `~/.claude/projects/*.jsonl` (your session transcripts),
-  `~/.claude/plugins/installed_plugins.json`, chezmoi source files if chezmoi
-  manages `~/.claude`.
-- **Writes**: `~/.claude/evolution/` (journal, roadmap, friction log, reports,
-  research notes); one config edit per `/ascend` cycle — always shown first.
-- **Runs**: `claude mcp list`, `chezmoi source-path`/`diff` (if present),
-  `git init` (offered, never forced), `rsync` + launchd/cron only if you opt
-  into `scripts/install-backup.sh`.
-- **Network**: `/ascend` and `/setup` do live web research to cite docs and
-  migration guides — that is the only thing that leaves your machine. Mining
-  and friction logging are fully local. Your transcripts are never transmitted.
+The short version — full detail in
+[docs/REFERENCE.md](docs/REFERENCE.md#what-it-touches):
 
-Mining reports contain your project names and prompt prefixes; they are
-gitignored by the offered `.gitignore` and marked "do not publish" — that
-gitignore, not a promise, is the privacy mechanism.
-
-## How your config is managed
-
-- **chezmoi manages `~/.claude`** → edits go to the chezmoi source, then
-  `chezmoi apply`. Live files are never edited directly (they'd be reverted
-  by the next apply).
-- **No chezmoi** → edits go to `~/.claude` with an offered `git init`, so
-  every improvement is one `git revert` away. Setup recommends chezmoi once,
-  never requires it.
-
-## Undo
-
-- Any `/ascend` change: `git revert` the commit (in `~/.claude` or your
-  chezmoi source).
-- Uninstall: `/plugin uninstall cc-ascension` removes the plugin; delete
-  `~/.claude/evolution/` to remove all mined state. Nothing else is left.
-- Backup job: `launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.cc-ascension-backup.plist`
-  (macOS) or remove the `cc-ascension-backup` line via `crontab -e` (Linux).
-
-## For teams
-
-cc-ascension is per-developer — it tunes your personal `~/.claude`, keyed to
-your own sessions and model. Rollout to a team = each dev installs the plugin
-and runs `/cc-ascension:setup` individually. Treat `~/.claude/evolution/` as
-private; never check it into a shared repo.
+- **Nothing is written without approval.** Every config change is shown as a
+  diff first, applied as one revertable commit (chezmoi-aware if you use it).
+- **Everything mined stays local.** Transcripts, reports, and the friction
+  log never leave your machine; reports are gitignored by the offered
+  `.gitignore`. The only network traffic is web research for citations.
+- **Uninstall is clean.** Remove the plugin, delete `~/.claude/evolution/`,
+  done — [undo guide](docs/REFERENCE.md#undo).
 
 ## Requirements
 
@@ -144,34 +131,5 @@ Node ≥ 18, Claude Code with plugin support. Backup scheduler: macOS (launchd)
 or Linux (cron); everything else is OS-agnostic. State location can be moved
 with `CC_ASCENSION_STATE` (default `~/.claude/evolution`).
 
-<details>
-<summary><b>FAQ</b></summary>
-
-**How often should I run `/ascend`?** No fixed cadence — run it when friction
-has accumulated. Weekly is a fine default.
-
-**Does it change things automatically?** No. Every write is shown first
-(diffs for settings and CLAUDE.md retunes, ranked candidates for
-improvements); you approve, it applies exactly one change, then stops.
-
-**What if my transcripts get pruned before mining?** Claude Code keeps ~30
-days. Run `scripts/install-backup.sh` for a long-term local mirror, then mine
-with `--src`.
-
-**What does the report contain?** Besides usage/cost tables: a "Delta since
-last report" section (diffed against the previous run's JSON sidecar), a
-"Friction candidates" section mined from transcripts (tool errors, permission
-denials, interrupts, retry loops — weaker signal than explicit `/friction`
-entries), and config health checks. Scripted/headless sessions (SDK
-entrypoint, prompt bursts) are excluded from prompt stats; add
-`--exclude-project <name>` for manual exclusions, `--no-health` to skip the
-host config checks. Unknown model names are flagged instead of silently
-priced. Run `node --test scripts/mine.test.mjs` to test the miner.
-
-**Is any of my data sent anywhere?** No. Research fetches public docs; your
-transcripts, reports, and friction log stay on disk, gitignored.
-
-**`/cc-ascension:friction` is long to type.** Add a personal alias command,
-e.g. `~/.claude/commands/f.md` that forwards its arguments to it.
-
-</details>
+Everything else — state directory layout, mining report flags and sections,
+troubleshooting, teams, FAQ — lives in [docs/REFERENCE.md](docs/REFERENCE.md).
