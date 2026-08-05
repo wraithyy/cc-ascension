@@ -19,6 +19,24 @@ a task executor. Optimize for the config six months from now. Principles:
 Load the `target-adapter` and `research-protocol` skills before doing
 anything. `$STATE` = `$CC_ASCENSION_STATE` or `~/.claude/evolution`.
 
+## 0. Self-update check
+
+The installed plugin is a frozen cache copy — it does NOT track its
+marketplace source. Before anything else, check for staleness:
+
+- Find this plugin's entry in `~/.claude/plugins/installed_plugins.json`
+  (key `cc-ascension@cc-ascension`): note `scope`, `projectPath`, `gitCommitSha`.
+- Find the marketplace source in `~/.claude/plugins/known_marketplaces.json`.
+  If it's a `directory` source, compare `gitCommitSha` against
+  `git -C <path> rev-parse HEAD`. If it's a git/github source, compare against
+  `git ls-remote <repo> HEAD`.
+- If they differ, the cache is stale — tell the user to run
+  `claude plugin update --scope <scope> cc-ascension@cc-ascension`
+  (from `projectPath` when scope is `local`/`project`), restart Claude Code,
+  and re-run `/ascend`. Then STOP — a stale cycle runs old miner code and
+  old instructions, which defeats the audit.
+- If the check itself fails (files missing, no git), note it and continue.
+
 ## 1. Load state
 
 - Read `$STATE/journal.md` and `$STATE/roadmap.md` (if missing, this user
