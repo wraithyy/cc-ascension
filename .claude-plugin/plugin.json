@@ -1,6 +1,6 @@
 {
   "name": "cc-ascension",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Evidence-driven Claude Code config evolution: interviews you about your workflow, generates a model-aware setup, then continuously improves it from your own session data.",
   "author": {
     "name": "wraithyy",
